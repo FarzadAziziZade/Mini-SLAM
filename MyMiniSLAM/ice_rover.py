@@ -1,5 +1,5 @@
 #1------------------------------------------------------------------------------------------------------------
-#libraries
+#Libraries
 from matrix import matrix
 import math
 import random

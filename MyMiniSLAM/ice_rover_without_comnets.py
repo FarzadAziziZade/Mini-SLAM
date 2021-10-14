@@ -125,10 +125,10 @@ class SLAM:
         y = MU.value[1][0]
         # TODO
         
-        raise NotImplementedError
+        #raise NotImplementedError
 
-        x = 0.0
-        y = 0.0
+        #x = 0.0
+        #y = 0.0
 
         return x, y
 #3------------------------------------------------------------------------------------------------------------
@@ -178,10 +178,10 @@ class SLAM:
         x = MU.value[0][0]
         y = MU.value[1][0]
         # TODO
-        raise NotImplementedError
+        #raise NotImplementedError
 
-        x = 0.0
-        y = 0.0
+        #x = 0.0
+        #y = 0.0
 
         return x, y
 #4------------------------------------------------------------------------------------------------------------        
@@ -402,10 +402,10 @@ class WayPointPlanner:
                     self.DoSLAM = DoSLAM
         # TODO
 #6------------------------------------------------------------------------------------------------------------        
-        raise NotImplementedError
+        #raise NotImplementedError
 
-        distance = 1.0
-        steering = 1.570963
-        action = 'move ' + str(steering) + ' ' + str(distance)
+        #distance = 1.0
+        #steering = 1.570963
+        #action = 'move ' + str(steering) + ' ' + str(distance)
 
         return action

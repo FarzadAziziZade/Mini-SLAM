@@ -31,17 +31,12 @@ if __name__ == "__main__":
     fig, ax = plt.subplots()
     ax.plot(x, y)
     map = params['area_map']
-    # print(map)
     landmarks = []
     for i in range(len(map)):
         for j in range(len(map[0])):
-            # print(map[i][j])
             if map[i][j] =='L':
                 landmarks.append((j,-i))
-    # print(landmarks)
     x_landmarks, y_landmarks = zip(*landmarks)
-        # for j in range(len(map[0][0])):
-        #     print(map[i][])
     ax.scatter(x_landmarks, y_landmarks, color='green')
     ax.scatter(x_sample, y_sample, color='red', marker='X')
     ax.scatter(x[0], y[0], color='black')
