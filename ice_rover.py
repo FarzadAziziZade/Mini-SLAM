@@ -53,14 +53,14 @@ class SLAM:
     def __init__(self, initialX = 0.0, initialY = 0.0, heading = 0.0):
         """Initialize SLAM components here.
         """
-        self.mylocation = matrix()
-        self.mylocation.zero(2, 2)
-        self.mylocation.value[0][0] = 1.0
-        self.mylocation.value[1][1] = 1.0
-        self.myClocation = matrix()
-        self.myClocation.zero(2, 1)
-        self.myClocation.value[0][0] = initialX
-        self.myClocation.value[1][0] = initialY
+        self.Omega = matrix()
+        self.Omega.zero(2, 2)
+        self.Omega.value[0][0] = 1.0
+        self.Omega.value[1][1] = 1.0
+        self.Xi = matrix()
+        self.Xi.zero(2, 1)
+        self.Xi.value[0][0] = initialX
+        self.Xi.value[1][0] = initialY
         self.knownLandmarks = []
         self.heading = heading
     def CheckKnownLandMarks(self, thisLandMark):
@@ -85,8 +85,8 @@ class SLAM:
         Returns:
             x, y: current belief in location of the rover relative to initial location before movement
         """
-        mylocation = self.mylocation
-        myClocation = self.myClocation
+        Omega = self.Omega
+        Xi = self.Xi
         for key in measurements.keys():
             TheType = measurements[key]['type']
             if TheType == 'beacon':
@@ -100,27 +100,28 @@ class SLAM:
                 dy = TheDist * math.sin(TheBear)
                 noiseX = DistNoise * math.cos(BearNoise)
                 noiseY = DistNoise * math.sin(BearNoise)
+                measurement_noise = [noiseX, noiseY]                
                 measurement_noise = [1.0, 1.0]
                 thismeasurement = [dx, dy]
                 IDx = self.CheckKnownLandMarks(key)
-                CurrentDimansion = len(myClocation.value)
+                CurrentDimansion = len(Xi.value)
                 CurrentList = range(CurrentDimansion)
                 if not IDx:
                     self.knownLandmarks.append(key)
                     IDx = self.CheckKnownLandMarks(key)
-                    mylocation = mylocation.expand(dimx=CurrentDimansion+2, dimy=CurrentDimansion+2, list1=CurrentList, list2=CurrentList)
-                    myClocation = myClocation.expand(dimx=CurrentDimansion+2, dimy=1, list1=CurrentList, list2=[0])
+                    Omega = Omega.expand(dimx=CurrentDimansion+2, dimy=CurrentDimansion+2, list1=CurrentList, list2=CurrentList)
+                    Xi = Xi.expand(dimx=CurrentDimansion+2, dimy=1, list1=CurrentList, list2=[0])
                 mIDx = 2*IDx + 2
                 for b in range(2):
-                    mylocation.value[b][b] += 1.0 * (1.0+measurement_noise[b])
-                    mylocation.value[mIDx + b][mIDx + b] += 1.0 * (1.0+measurement_noise[b])
-                    mylocation.value[b][mIDx + b] -= 1.0 * (1.0+measurement_noise[b])
-                    mylocation.value[mIDx + b][b] -= 1.0 * (1.0+measurement_noise[b])
-                    myClocation.value[b][0] += -thismeasurement[b] * (1.0+measurement_noise[b])
-                    myClocation.value[mIDx + b][0] += thismeasurement[b] * (1.0+measurement_noise[b])
-        self.mylocation = mylocation
-        self.myClocation = myClocation
-        MU = mylocation.inverse() * myClocation
+                    Omega.value[b][b] += 1.0 * (1.0+measurement_noise[b])
+                    Omega.value[mIDx + b][mIDx + b] += 1.0 * (1.0+measurement_noise[b])
+                    Omega.value[b][mIDx + b] -= 1.0 * (1.0+measurement_noise[b])
+                    Omega.value[mIDx + b][b] -= 1.0 * (1.0+measurement_noise[b])
+                    Xi.value[b][0] += -thismeasurement[b] * (1.0+measurement_noise[b])
+                    Xi.value[mIDx + b][0] += thismeasurement[b] * (1.0+measurement_noise[b])
+        self.Omega = Omega
+        self.Xi = Xi
+        MU = Omega.inverse() * Xi
         x = MU.value[0][0]
         y = MU.value[1][0]
         # TODO
@@ -144,37 +145,37 @@ class SLAM:
         Returns:
             x, y: current belief in location of the rover relative to initial location after movement
         """
-        mylocation = self.mylocation
-        myClocation = self.myClocation
-        thisheading = self.truncateAngle(self.heading + steering)
-        self.heading = thisheading
-        dx = distance * math.cos(thisheading)
-        dy = distance * math.sin(thisheading)
-        thismotion = [dx, dy]
-        dim = len(myClocation.value)
+        Omega = self.Omega
+        Xi = self.Xi
+        TheHeading = self.truncateAngle(self.heading + steering)
+        self.heading = TheHeading
+        dx = distance * math.cos(TheHeading)
+        dy = distance * math.sin(TheHeading)
+        TheMotion = [dx, dy]
+        dim = len(Xi.value)
         data_pointer_list = [0, 1] + range(4, dim + 2)
-        mylocation = mylocation.expand(dimx=dim+2, dimy=dim+2, list1=data_pointer_list, list2=data_pointer_list)
-        myClocation = myClocation.expand(dimx=dim+2, dimy=1, list1=data_pointer_list, list2=[0])
+        Omega = Omega.expand(dimx=dim+2, dimy=dim+2, list1=data_pointer_list, list2=data_pointer_list)
+        Xi = Xi.expand(dimx=dim+2, dimy=1, list1=data_pointer_list, list2=[0])
         for b in range(4):
-            mylocation.value[b][b] += 1.0 / motion_noise
+            Omega.value[b][b] += 1.0 / motion_noise
         for b in range(2):
-            mylocation.value[b][b+2] += -1.0 / motion_noise
-            mylocation.value[b+2][b] += -1.0 / motion_noise
-            myClocation.value[b][0] += -thismotion[b] / motion_noise
-            myClocation.value[b+2][0] += thismotion[b] / motion_noise
+            Omega.value[b][b+2] += -1.0 / motion_noise
+            Omega.value[b+2][b] += -1.0 / motion_noise
+            Xi.value[b][0] += -TheMotion[b] / motion_noise
+            Xi.value[b+2][0] += TheMotion[b] / motion_noise
         Alist = range(2, dim+2)
-        A = mylocation.take(list1=[0, 1], list2=Alist)
+        A = Omega.take(list1=[0, 1], list2=Alist)
         Blist = [0, 1]
-        B = mylocation.take(list1=Blist, list2=Blist)
+        B = Omega.take(list1=Blist, list2=Blist)
         Clist = [0, 1]
-        C = myClocation.take(list1=Clist, list2=[0])
-        mylocationPrime = mylocation.take(list1=Alist, list2=Alist)
-        myClocationPrime = myClocation.take(list1=Alist, list2=[0])
-        mylocation = mylocationPrime - A.transpose() * B.inverse() * A
-        myClocation = myClocationPrime - A.transpose() * B.inverse() * C
-        self.mylocation = mylocation
-        self.myClocation = myClocation
-        MU = mylocation.inverse() * myClocation
+        C = Xi.take(list1=Clist, list2=[0])
+        OmegaPrime = Omega.take(list1=Alist, list2=Alist)
+        XiPrime = Xi.take(list1=Alist, list2=[0])
+        Omega = OmegaPrime - A.transpose() * B.inverse() * A
+        Xi = XiPrime - A.transpose() * B.inverse() * C
+        self.Omega = Omega
+        self.Xi = Xi
+        MU = Omega.inverse() * Xi
         x = MU.value[0][0]
         y = MU.value[1][0]
         # TODO
@@ -242,7 +243,7 @@ class WayPointPlanner:
                     UsedBear = TheBear
                     MinDist = TheDist
         return UsedKey, UsedDist, UsedBear
-    def generatePatrolAction(self):
+    def SearchFurthestLookTwoDirect(self):
         distance = self.max_distance * 1.0
         self.patrolStraightCount -= 1
         if self.patrolStraightCount == 0:
@@ -264,10 +265,10 @@ class WayPointPlanner:
                 until = len(NewDoingSample)
                 i = 0
                 while i < until and NoSampleFounded:
-                    thisOld = self.sampleList[i]
-                    thisNew = NewDoingSample[i]
-                    if not (thisOld[0] == thisNew[0] and thisOld[1] == thisNew[1]):
-                        FoundedSamples = thisOld
+                    TheOld = self.sampleList[i]
+                    TheNew = NewDoingSample[i]
+                    if not (TheOld[0] == TheNew[0] and TheOld[1] == TheNew[1]):
+                        FoundedSamples = TheOld
                         NoSampleFounded = False
                     i += 1
                 if not FoundedSamples:
@@ -330,14 +331,14 @@ class WayPointPlanner:
             measurex, measurey = DoSLAM.process_measurements(measurements)
             dx = FoundedSamples[0] - measurex
             dy = FoundedSamples[1] - measurey
-            thismyClocation = self.DoSLAM.myClocation
-            thismyClocation.value[0][0] += dx
-            thismyClocation.value[1][0] += dy
-            self.DoSLAM.myClocation = thismyClocation
+            TheXi = self.DoSLAM.Xi
+            TheXi.value[0][0] += dx
+            TheXi.value[1][0] += dy
+            self.DoSLAM.Xi = TheXi
             self.sampleList = list(sample_todo)
         if not self.foundSampleFlagonce:
             if not TheKey:
-                action, steering, distance = self.generatePatrolAction()
+                action, steering, distance = self.SearchFurthestLookTwoDirect()
                 motionx, motiony = DoSLAM.process_movement(steering, distance)
             else:
                 if TheDistance < 0.25:
@@ -378,7 +379,7 @@ class WayPointPlanner:
                         if distance > self.max_distance:
                             UsedDistance = self.max_distance
                         elif distance < 0.001:
-                            action, UsedBearing, UsedDistance = self.generatePatrolAction()
+                            action, UsedBearing, UsedDistance = self.SearchFurthestLookTwoDirect()
                             self.foundSampleFlagonce = False
                         else:
                             UsedDistance = distance
