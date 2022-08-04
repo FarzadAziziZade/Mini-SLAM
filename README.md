@@ -1,4 +1,4 @@
-# MyMiniSLAM
+# Mini SLAM
 Farzad Azizi Zade
 SLAM ( Simultaneous Localization and Mapping ),
 Here, I upload my implementation of Mini 2D-SLAM.
