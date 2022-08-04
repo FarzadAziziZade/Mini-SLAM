@@ -1,7 +1,7 @@
 # MyMiniSLAM
 Farzad Azizi Zade
 SLAM ( Simultaneous Localization and Mapping ),
-Here, I upload my SLAM scripts
+Here, I upload my implementation of Mini 2D-SLAM.
 
 ![PlotVisual_Farzad_Output](https://user-images.githubusercontent.com/84402243/137332513-3749451c-f39d-431d-8eeb-5e6d2081dc37.png)
 
